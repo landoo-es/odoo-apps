@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+<odoo>
+    <data>
+
+        <!-- pos.request -->
+
+        <record model="ir.ui.view" id="view_pos_request_tree">
+            <field name="name">pos.request.tree</field>
+            <field name="model">pos.request</field>
+            <field name="arch" type="xml">
+                <tree string="POS Request"
+                      colors="grey:state=='cancel';blue:state=='to_deliver';green:state=='delivered';#c1810c:state=='in_progress'">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="reference"/>
+                    <field name="date"/>
+                    <field name="date_to_deliver"/>
+                    <field name="prepaid_qty"/>
+                    <field name="amount_total"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_pos_request_form">
+            <field name="name">pos.request.form</field>
+            <field name="model">pos.request</field>
+            <field name="arch" type="xml">
+                <form string="POS Request" version="7.0">
+                    <header>
+                        <button name="change_in_progress" type="object" string="Change to Waiting availability"
+                                class="btn-primary" states="cancel"/>
+                        <button name="change_to_deliver" string="Change to deliver" type="object" class="btn-primary"
+                                states="delivered" attrs="{'invisible': ['&amp;', ('can_to_deliver', '=', False)]}"/>
+                        <button name="change_to_delivered" class="btn-primary" string="Change to delivered"
+                                type="object" states="to_deliver"/>
+                        <button name="change_to_cancel" string="Cancel" type="object"
+                                states="in_progress,to_deliver,delivered"/>
+                        <field name="can_to_deliver" invisible="1"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <field name="company_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group name="info">
+                            <group name="partner_info" string="Partner info">
+                                <field name="partner_id"/>
+                                <field name="homedelivery_client"/>
+                                <field name="reference"/>
+                            </group>
+                            <group name="request_dates" string="Dates info">
+                                <field name="date"/>
+                                <field name="date_to_deliver"/>
+                                <field name="date_delivered"/>
+                                <field name="date_cancel"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Lines">
+                                <field name="line_ids">
+                                    <tree editable="bottom">
+                                        <field name="product_id" domain="[('available_pos_request', '=', True)]"/>
+                                        <field name="qty"/>
+                                        <field name="note"/>
+                                        <field name="price_unit"/>
+                                        <field name="tax_id" widget="many2many_tags"
+                                               domain="[('type_tax_use','=','sale'),('company_id','=',parent.company_id)]"/>
+                                        <field name="price_tax"/>
+                                        <field name="price_subtotal"/>
+                                        <field name="price_total"/>
+                                        <field name="company_id" invisible="1"/>
+                                        <field name="currency_id" invisible="1"/>
+                                        <field name="procurement_order_id" readonly="1"/>
+                                        <field name="state" readonly="1"/>
+                                    </tree>
+                                </field>
+                                <group class="oe_subtotal_footer oe_right" colspan="2" name="total">
+                                    <field name="amount_untaxed" widget="monetary"/>
+                                    <field name="amount_tax" widget="monetary"/>
+                                    <field name="amount_total" class="oe_subtotal_footer_separator"
+                                           widget="monetary"/>
+                                    <field name="prepaid_qty" widget="monetary"/>
+                                    <field name="amount_to_paid" widget="monetary"/>
+                                </group>
+                                <field name="notes" class="oe_inline" placeholder="Request extra information"/>
+                                <div class="oe_clear"/>
+                            </page>
+                            <page string="Other information">
+                                <group name="request_info" string="Request info">
+                                    <field name="pos_session_id" class="oe_inline" readonly="0"/>
+                                    <field name="pos_config_id" class="oe_inline"/>
+                                    <field name="user_id" class="oe_inline"/>
+                                    <field name="barcode" class="oe_inline"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_pos_request_search">
+            <field name="name">pos.request.search</field>
+            <field name="model">pos.request</field>
+            <field name="arch" type="xml">
+                <search string="POS Request">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="barcode"/>
+                    <field name="company_id"/>
+                    <field name="date"/>
+                    <filter string="Canceled" domain="[('state','=','cancel')]"/>
+                    <filter string="To deliver" domain="[('state','=','to_deliver')]"/>
+                    <filter string="Delivered" domain="[('state','=','delivered')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="State" name="state" context="{'group_by':'state'}"/>
+                        <filter string="Company" name="company_id" context="{'group_by':'company_id'}"/>
+                        <filter string="Currency" name="currency_id" context="{'group_by':'currency_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_pos_request">
+            <field name="name">Requests</field>
+            <field name="res_model">pos.request</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_pos_request_tree"/>
+        </record>
+
+        <menuitem id="menu_pos_request" parent="point_of_sale.menu_point_of_sale" action="action_pos_request"
+                  sequence="30"/>
+
+        <!-- barcode -->
+
+        <record id="seq_pos_request" model="ir.sequence">
+            <field name="name">POS request</field>
+            <field name="code">pos_request</field>
+            <field name="prefix">PR</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <record id="pos_request_barcode_id" model="barcode.rule">
+            <field name="name">POS request</field>
+            <field name="barcode_nomenclature_id" ref="barcodes.default_barcode_nomenclature"/>
+            <field name="sequence">70</field>
+            <field name="type">pos_request</field>
+            <field name="encoding">any</field>
+            <field name="pattern">097</field>
+        </record>
+
+        <!-- pos.config -->
+
+        <record id="view_pos_config_form" model="ir.ui.view">
+            <field name="name">pos.config.form.view</field>
+            <field name="model">pos.config</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_config_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='features']" position="after">
+                    <group name="request" string="Requests">
+                        <group>
+                            <field name="request_product_id"/>
+                            <field name="request_previous_days"/>
+                            <field name="request_procurement_order"/>
+                            <field name="request_warehouse_id"
+                                   attrs="{
+                                   'invisible': [('request_procurement_order', '=', False)],
+                                   'required': [('request_procurement_order', '=', True)]
+                                   }"/>
+                            <field name="request_v_location_id"
+                                   attrs="{
+                                   'invisible': [('request_procurement_order', '=', False)],
+                                   'required': [('request_procurement_order', '=', True)]
+                                   }"/>
+                        </group>
+                        <group>
+                            <field name="request_filter_products"/>
+                            <field name="request_reference"/>
+                            <field name="request_show_all"/>
+                            <field name="request_client_required"/>
+                            <field name="request_date_required"/>
+                        </group>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="product_pos_request" model="product.product">
+            <field name="list_price">0.0</field>
+            <field name="standard_price">0.0</field>
+            <field name="type">service</field>
+            <field name="name">Request</field>
+            <field name="sale_ok" eval="True"/>
+            <field name="available_in_pos" eval="True"/>
+        </record>
+
+    </data>
+</odoo>
